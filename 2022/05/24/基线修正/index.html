@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>基线修正 - Henglyu的个人博客</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Henglyu的个人博客"><meta name="msapplication-TileImage" content="/img/logo_lyu3.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Henglyu的个人博客"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="基线漂移（0.05-1.5 Hz）与 ST 段（0.7-2.0 Hz）有频率重叠，使用常规高通滤波会导致 ST 段失真。使用较低（0.67 Hz）低通滤波时又滤不干净基线漂移，因此需要找到一种可以避免ST失真的基线漂移修正方案。"><meta property="og:type" content="blog"><meta property="og:title" content="基线修正"><meta property="og:url" content="http://henglyu.github.io/2022/05/24/%E5%9F%BA%E7%BA%BF%E4%BF%AE%E6%AD%A3/"><meta property="og:site_name" content="Henglyu的个人博客"><meta property="og:description" content="基线漂移（0.05-1.5 Hz）与 ST 段（0.7-2.0 Hz）有频率重叠，使用常规高通滤波会导致 ST 段失真。使用较低（0.67 Hz）低通滤波时又滤不干净基线漂移，因此需要找到一种可以避免ST失真的基线漂移修正方案。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945281853-1dd1e94f-06d2-46c2-bd08-b12ac8290e74.png#clientId=ud35ed444-d47c-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=420&amp;id=ua032f4a0&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=420&amp;originWidth=1915&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=72001&amp;status=done&amp;style=none&amp;taskId=u32384b50-3174-4c5e-a75c-a5338d1a223&amp;title=&amp;width=1915"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945359076-879f3d8d-d3d2-402b-9090-9e79aa6a2126.png#clientId=ud35ed444-d47c-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=420&amp;id=u30c7154e&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=420&amp;originWidth=1914&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=76025&amp;status=done&amp;style=none&amp;taskId=u86d667a3-2fe3-4054-be1b-1445a3ae7bb&amp;title=&amp;width=1914"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945384985-8e1ed000-a0bc-4a16-a42c-6d5598c99168.png#clientId=ud35ed444-d47c-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=420&amp;id=u5e59db2e&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=420&amp;originWidth=1917&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=71695&amp;status=done&amp;style=none&amp;taskId=u4dc05e5d-89ee-4714-bb8f-4d7ba9fcac6&amp;title=&amp;width=1917"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945486039-bf1001ef-f59f-4a8a-8bce-2754eca67bd4.png#clientId=ud35ed444-d47c-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=420&amp;id=ud06ae4dd&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=420&amp;originWidth=1912&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=61140&amp;status=done&amp;style=none&amp;taskId=u1bfaba38-8807-4e1f-9ed9-7d6c5ef054f&amp;title=&amp;width=1912"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945673594-c4158ffc-a65a-464e-a92f-016ce5dd6627.png#clientId=ud35ed444-d47c-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=420&amp;id=u55336bc3&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=420&amp;originWidth=1917&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=54146&amp;status=done&amp;style=none&amp;taskId=uef7882ae-9f18-49c0-8566-16827014ed0&amp;title=&amp;width=1917"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945743979-7e0de311-501f-48b5-b7c4-4d514052fa1f.png#clientId=ud35ed444-d47c-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=420&amp;id=u3d559ee8&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=420&amp;originWidth=1914&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=36774&amp;status=done&amp;style=none&amp;taskId=ua54b5468-5c6e-4cd0-8119-bd81767f025&amp;title=&amp;width=1914"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945800396-654e96f7-0c81-4af9-b543-c4b3c117c6a2.png#clientId=ud35ed444-d47c-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=420&amp;id=u90110c5b&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=420&amp;originWidth=1915&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=41468&amp;status=done&amp;style=none&amp;taskId=u4e421908-a58a-4cb4-9f87-a0f1b134db3&amp;title=&amp;width=1915"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652948568787-9dce7a46-bbf4-42db-a002-4bc6325f0adf.png#clientId=u59c8edd9-332d-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=379&amp;id=uc86f333a&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=379&amp;originWidth=754&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=480553&amp;status=done&amp;style=none&amp;taskId=u8c58ba18-1196-4f2e-a70b-3eb704042b8&amp;title=&amp;width=754"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652931755695-ca0b8c9e-7f75-4310-83de-b73cb8095fd2.png#clientId=udba27b7a-b767-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=199&amp;id=u2ae5f55a&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=199&amp;originWidth=317&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=6583&amp;status=done&amp;style=none&amp;taskId=u6b495e46-ebbe-45da-abac-f86e8f0bd2d&amp;title=&amp;width=317"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652866199456-3c4e50f8-d987-44eb-afea-7b749fa6dab0.png#clientId=udba27b7a-b767-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=796&amp;id=Lvard&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=796&amp;originWidth=1420&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=129416&amp;status=done&amp;style=none&amp;taskId=u7bdc02b0-1cf8-4314-8e61-d151a50f072&amp;title=&amp;width=1420"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652866209660-69757840-2964-43ec-8183-18f4d1a7a88f.png#clientId=udba27b7a-b767-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=546&amp;id=WDQXA&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=546&amp;originWidth=1261&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=49915&amp;status=done&amp;style=none&amp;taskId=u1642a50f-7399-4baa-83b8-62c557bb23a&amp;title=&amp;width=1261"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652946948199-1611ed08-d2f8-46b6-8bf7-988467ae8397.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=uf1af97d2&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=252936&amp;status=done&amp;style=none&amp;taskId=uaeeedfc1-3e52-4b71-a5e6-b9083fec971&amp;title=&amp;width=1920"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652946842256-8f084518-3e2d-4705-ac38-ac29ed61ab72.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=u9eb79298&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=233185&amp;status=done&amp;style=none&amp;taskId=u5e22c12a-c57e-47fe-adcf-b61815afc26&amp;title=&amp;width=1920"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947034457-e001267e-4b85-4727-9fa0-38312e34292a.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=ubaf057a8&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=228135&amp;status=done&amp;style=none&amp;taskId=ud245efdd-4e08-4a52-b289-465ae4f333f&amp;title=&amp;width=1920"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947117960-41d62c13-6b1f-4cc6-a6ff-7230c6ebd236.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=ucf34c0b5&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=249313&amp;status=done&amp;style=none&amp;taskId=u4ecd0e46-d6ce-4fc4-9f07-57bd0d0b918&amp;title=&amp;width=1920"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947144465-a44ab1e1-09e2-45ed-ba66-ea7fdb58c3ab.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=u3be57b1e&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=248176&amp;status=done&amp;style=none&amp;taskId=u32bfa327-b29a-4b63-8d34-f3fa135a3ce&amp;title=&amp;width=1920"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947176927-c4f16ad4-c196-4b2d-937d-94ecd2a4ac34.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=uc57932c2&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=238923&amp;status=done&amp;style=none&amp;taskId=u859a3a2f-6ada-4fd8-ac49-2f9aceea7fe&amp;title=&amp;width=1920"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947499977-a02070db-4d66-4ef8-be33-9423850746ed.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=u274d7edc&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=167648&amp;status=done&amp;style=none&amp;taskId=u0531af10-afa5-43f1-bec5-112a39d9c16&amp;title=&amp;width=1920"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947526722-5771fb2e-5831-4a73-935c-134b4db411b0.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=u7628d2fa&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=171679&amp;status=done&amp;style=none&amp;taskId=u7bfe42d0-f680-44ca-bfd7-fd878267ddf&amp;title=&amp;width=1920"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947555615-b3da85b0-3598-4df4-b583-52790d0692ed.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=uee561c44&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=164703&amp;status=done&amp;style=none&amp;taskId=ua2b54a09-57ce-45c6-b09f-bfd406fe4f1&amp;title=&amp;width=1920"><meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947594976-50fef0a7-bcd9-470c-85f6-7eac1e3d67ec.png#clientId=u2717f878-29f7-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=962&amp;id=u7377a548&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=962&amp;originWidth=1920&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=145261&amp;status=done&amp;style=none&amp;taskId=u9530ed81-57a1-42f5-8472-b1b1da634fc&amp;title=&amp;width=1920"><meta property="article:published_time" content="2022-05-24T08:41:46.000Z"><meta property="article:modified_time" content="2022-05-24T08:56:36.675Z"><meta property="article:author" content="Heng Lyu"><meta property="article:tag" content="滤波"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945281853-1dd1e94f-06d2-46c2-bd08-b12ac8290e74.png#clientId=ud35ed444-d47c-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=420&amp;id=ua032f4a0&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=420&amp;originWidth=1915&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=72001&amp;status=done&amp;style=none&amp;taskId=u32384b50-3174-4c5e-a75c-a5338d1a223&amp;title=&amp;width=1915"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://henglyu.github.io/2022/05/24/%E5%9F%BA%E7%BA%BF%E4%BF%AE%E6%AD%A3/"},"headline":"基线修正","image":[],"datePublished":"2022-05-24T08:41:46.000Z","dateModified":"2022-05-24T08:56:36.675Z","author":{"@type":"Person","name":"Heng Lyu"},"publisher":{"@type":"Organization","name":"Henglyu的个人博客","logo":{"@type":"ImageObject","url":"http://henglyu.github.io/img/logo_lyu1.png"}},"description":"基线漂移（0.05-1.5 Hz）与 ST 段（0.7-2.0 Hz）有频率重叠，使用常规高通滤波会导致 ST 段失真。使用较低（0.67 Hz）低通滤波时又滤不干净基线漂移，因此需要找到一种可以避免ST失真的基线漂移修正方案。"}</script><link rel="canonical" href="http://henglyu.github.io/2022/05/24/%E5%9F%BA%E7%BA%BF%E4%BF%AE%E6%AD%A3/"><link rel="icon" href="/img/logo_lyu3.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cookieconsent@3.1.1/build/cookieconsent.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!--!--><!--!--><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+          Array
+              .from(document.querySelectorAll('.tab-content'))
+              .forEach($tab => {
+                  $tab.classList.add('is-hidden');
+              });
+          Array
+              .from(document.querySelectorAll('.tabs li'))
+              .forEach($tab => {
+                  $tab.classList.remove('is-active');
+              });
+          const $activeTab = document.querySelector(location.hash);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+          const $tabMenu = document.querySelector(`a[href="${location.hash}"]`);
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.1.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo_lyu1.png" alt="Henglyu的个人博客" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">目录</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="GitHub" href="https://github.com/henglyu"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal"><i class="fas fa-angle-double-right"></i>基线修正</h1><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><i class="far fa-calendar-alt"> </i><time dateTime="2022-05-24T08:41:46.000Z" title="2022-05-24T08:41:46.000Z">2022-05-24</time></span><span class="level-item is-hidden-mobile"><i class="far fa-calendar-check"> </i><time dateTime="2022-05-24T08:56:36.675Z" title="2022-05-24T08:56:36.675Z">2022-05-24</time></span><span class="level-item">36 分钟读完 (大约5339个字)</span><span class="level-item" id="busuanzi_container_page_pv"><i class="far fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv">0</span>次访问</span></div></div><div class="content"><p><a name="iJC0o"></a></p>
+<h2 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h2><p>基线漂移（0.05-1.5 Hz）与 ST 段（0.7-2.0 Hz）有频率重叠，使用常规高通滤波会导致 ST 段失真。使用较低（0.67 Hz）低通滤波时又滤不干净基线漂移，因此需要找到一种可以避免ST失真的基线漂移修正方案。</p>
+<!-- more -->
+<p><a name="yjE2j"></a></p>
+<h2 id="实验设备与软件"><a href="#实验设备与软件" class="headerlink" title="实验设备与软件"></a>实验设备与软件</h2><p>设备：64位windows 10 专业版20H2，I7-9700 CPU，32GB 内存<br />软件：Matlab2020a、ubuntu（或cygwin64）、WFDB<br><a name="mJCvT"></a></p>
+<h2 id="数据来源-x2F-划分"><a href="#数据来源-x2F-划分" class="headerlink" title="数据来源&#x2F;划分"></a>数据来源&#x2F;划分</h2><p><a name="n4eZU"></a></p>
+<h3 id="数据来源"><a href="#数据来源" class="headerlink" title="数据来源"></a>数据来源</h3><p><a name="wpaOc"></a></p>
+<h4 id="法规校准用-CAL-数据"><a href="#法规校准用-CAL-数据" class="headerlink" title="法规校准用 CAL 数据"></a>法规校准用 CAL 数据</h4><p><a name="CxA3E"></a></p>
+<h5 id="CAL20100"><a href="#CAL20100" class="headerlink" title="CAL20100"></a>CAL20100</h5><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945281853-1dd1e94f-06d2-46c2-bd08-b12ac8290e74.png#clientId=ud35ed444-d47c-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=420&id=ua032f4a0&margin=%5Bobject%20Object%5D&name=image.png&originHeight=420&originWidth=1915&originalType=binary&ratio=1&rotation=0&showTitle=false&size=72001&status=done&style=none&taskId=u32384b50-3174-4c5e-a75c-a5338d1a223&title=&width=1915" alt="image.png"><br><a name="yIhMc"></a></p>
+<h5 id="CAL20110"><a href="#CAL20110" class="headerlink" title="CAL20110"></a>CAL20110</h5><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945359076-879f3d8d-d3d2-402b-9090-9e79aa6a2126.png#clientId=ud35ed444-d47c-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=420&id=u30c7154e&margin=%5Bobject%20Object%5D&name=image.png&originHeight=420&originWidth=1914&originalType=binary&ratio=1&rotation=0&showTitle=false&size=76025&status=done&style=none&taskId=u86d667a3-2fe3-4054-be1b-1445a3ae7bb&title=&width=1914" alt="image.png"><br><a name="Po7ax"></a></p>
+<h5 id="CAL20160"><a href="#CAL20160" class="headerlink" title="CAL20160"></a>CAL20160</h5><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945384985-8e1ed000-a0bc-4a16-a42c-6d5598c99168.png#clientId=ud35ed444-d47c-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=420&id=u5e59db2e&margin=%5Bobject%20Object%5D&name=image.png&originHeight=420&originWidth=1917&originalType=binary&ratio=1&rotation=0&showTitle=false&size=71695&status=done&style=none&taskId=u4dc05e5d-89ee-4714-bb8f-4d7ba9fcac6&title=&width=1917" alt="image.png"><br><a name="PI23X"></a></p>
+<h4 id="MIT-基线漂移数据"><a href="#MIT-基线漂移数据" class="headerlink" title="MIT 基线漂移数据"></a>MIT 基线漂移数据</h4><p><a name="C2QFU"></a></p>
+<h5 id="bw-dat"><a href="#bw-dat" class="headerlink" title="bw.dat"></a>bw.dat</h5><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945486039-bf1001ef-f59f-4a8a-8bce-2754eca67bd4.png#clientId=ud35ed444-d47c-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=420&id=ud06ae4dd&margin=%5Bobject%20Object%5D&name=image.png&originHeight=420&originWidth=1912&originalType=binary&ratio=1&rotation=0&showTitle=false&size=61140&status=done&style=none&taskId=u1bfaba38-8807-4e1f-9ed9-7d6c5ef054f&title=&width=1912" alt="image.png"></p>
+<p>Note：bw 数据共有 30 分钟， 上图只显示其中的一段 20 s 数据，在每次实验取随机一段与信号等长的数据。</p>
+<p><a name="u6lm1"></a></p>
+<h4 id="Matlab-模拟数据"><a href="#Matlab-模拟数据" class="headerlink" title="Matlab 模拟数据"></a>Matlab 模拟数据</h4><p><a name="rXWhM"></a></p>
+<h5 id="单正弦信号"><a href="#单正弦信号" class="headerlink" title="单正弦信号"></a>单正弦信号</h5><p>$bw_1(n)&#x3D;Asin(2\pi fn)$<br /><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945673594-c4158ffc-a65a-464e-a92f-016ce5dd6627.png#clientId=ud35ed444-d47c-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=420&id=u55336bc3&margin=%5Bobject%20Object%5D&name=image.png&originHeight=420&originWidth=1917&originalType=binary&ratio=1&rotation=0&showTitle=false&size=54146&status=done&style=none&taskId=uef7882ae-9f18-49c0-8566-16827014ed0&title=&width=1917" alt="image.png"><br><a name="Ito2A"></a></p>
+<h5 id="多正弦信号"><a href="#多正弦信号" class="headerlink" title="多正弦信号"></a>多正弦信号</h5><p>$bw_1(n)&#x3D;Asin(2\pi fn)+5Asin(2\pi \frac{f}{5}n)+10Asin(2\pi \frac{f}{10}n)$<br /><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945743979-7e0de311-501f-48b5-b7c4-4d514052fa1f.png#clientId=ud35ed444-d47c-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=420&id=u3d559ee8&margin=%5Bobject%20Object%5D&name=image.png&originHeight=420&originWidth=1914&originalType=binary&ratio=1&rotation=0&showTitle=false&size=36774&status=done&style=none&taskId=ua54b5468-5c6e-4cd0-8119-bd81767f025&title=&width=1914" alt="image.png"><br><a name="uaaJq"></a></p>
+<h5 id="周期性门信号（宽度-100-ms-x2F-幅度-3-mV）"><a href="#周期性门信号（宽度-100-ms-x2F-幅度-3-mV）" class="headerlink" title="周期性门信号（宽度 100 ms &#x2F; 幅度 3 mV）"></a>周期性门信号（宽度 100 ms &#x2F; 幅度 3 mV）</h5><p>$square_{ecg}(n)&#x3D;\prod(n)$ <br /><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652945800396-654e96f7-0c81-4af9-b543-c4b3c117c6a2.png#clientId=ud35ed444-d47c-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=420&id=u90110c5b&margin=%5Bobject%20Object%5D&name=image.png&originHeight=420&originWidth=1915&originalType=binary&ratio=1&rotation=0&showTitle=false&size=41468&status=done&style=none&taskId=u4e421908-a58a-4cb4-9f87-a0f1b134db3&title=&width=1915" alt="image.png"><br />用于合规性检测<br /><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652948568787-9dce7a46-bbf4-42db-a002-4bc6325f0adf.png#clientId=u59c8edd9-332d-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=379&id=uc86f333a&margin=%5Bobject%20Object%5D&name=image.png&originHeight=379&originWidth=754&originalType=binary&ratio=1&rotation=0&showTitle=false&size=480553&status=done&style=none&taskId=u8c58ba18-1196-4f2e-a70b-3eb704042b8&title=&width=754" alt="image.png"><br><a name="hFi2c"></a></p>
+<h3 id="数据划分"><a href="#数据划分" class="headerlink" title="数据划分"></a>数据划分</h3><p>根据不同种类信号与不同种类基线漂移，本次实验共有10种组合，分别为</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>MIT 基线</th>
+<th>单正弦基线</th>
+<th>多正弦基线</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CAL 20100</td>
+<td>组合1</td>
+<td>组合4</td>
+<td>组合7</td>
+</tr>
+<tr>
+<td>CAL 20110</td>
+<td>组合2</td>
+<td>组合5</td>
+<td>组合8</td>
+</tr>
+<tr>
+<td>CAL 20160</td>
+<td>组合3</td>
+<td>组合6</td>
+<td>组合9</td>
+</tr>
+<tr>
+<td>门信号</td>
+<td>组合10 （不添加基线漂移）</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p><a name="rDbEK"></a></p>
+<h2 id="实验方法、分析和难点"><a href="#实验方法、分析和难点" class="headerlink" title="实验方法、分析和难点"></a>实验方法、分析和难点</h2><p><a name="QbVuJ"></a></p>
+<h3 id="实验方法"><a href="#实验方法" class="headerlink" title="实验方法"></a>实验方法</h3><p>本次实验为初步实验，首先分析一部分目前可以利用的基线漂移滤波器，并观察这些滤波器在<a href="#hFi2c">不同输入信号</a>下的滤波效果。本次实验涉及到的滤波器包括：</p>
+<ol>
+<li>0.67 Hz 整系数高通 FIR 滤波器</li>
+<li>S-G 滤波器</li>
+<li>小波滤波</li>
+<li>EMD 滤波</li>
+<li>VMD 滤波</li>
+<li>分段三次样条滤波</li>
+<li>平滑先验滤波</li>
+<li>beads 凸优化滤波<br><a name="kdgOp"></a><h4 id="S-G-滤波器"><a href="#S-G-滤波器" class="headerlink" title="S-G 滤波器"></a>S-G 滤波器</h4><blockquote>
+<p>Savitzky-Golay滤波器（通常简称为S-G滤波器）最初由Savitzky和Golay于1964年提出，发表于Analytical Chemistry 杂志。之后被⼴泛地运⽤于数据流平滑除噪，是⼀种在时域内基于局域多项式最⼩⼆乘法拟合的滤波⽅法。这种滤波器最⼤的特点在于在滤除噪声的同时可以确保信号的形状、宽度不变。</p>
+</blockquote>
+</li>
+</ol>
+<p><a name="H6omX"></a></p>
+<h4 id="原理简介："><a href="#原理简介：" class="headerlink" title="原理简介："></a>原理简介：</h4><p>设滤波窗口的宽度为$N&#x3D;2m+1$，各测量点为$x(i), i&#x3D;-m,-m+1,..,0,..,m-1,m$,采用 k-1 次多项式对窗口内的数据点进行拟合<br />$y &#x3D;a_0+a_1x+a_2x^2+…+a_{k-1}x^{k-1}$<br />于是就有了n个这样的方程，扣成了k元线性方程组。要使方程组有解则n应大于等于k，一般选择n&gt;k，通过最小二乘法拟合确定拟合参数A。由此得到<br />$\begin{pmatrix} y_{-m} \y_{-m-1}\…\y_{-m}\ \end{pmatrix} &#x3D;<br>\begin{pmatrix}<br>1 &amp; -m &amp; … &amp; (-m)^{k-1} \<br>1 &amp; -m+1 &amp; … &amp; (-m+1)^{k-1} \<br>\vdots  &amp;  \vdots &amp; \ddots &amp; \vdots \<br>1 &amp; m &amp; … &amp; (m)^{k-1} \<br>\end{pmatrix}<br>\begin{pmatrix}<br>a_0 \a_1 &amp;  \\vdots \a_{k-1} \\end{pmatrix}<br>+\begin{pmatrix}<br>e_{-m} \e_{-m+1} &amp;  \\vdots \e_{m} \\end{pmatrix}$<br />用矩阵形式表示为<br />$Y&#x3D;XA+E$<br />A的最小二乘解为<br />$\hat A &#x3D; (X^TX)^{-1}X^TY$<br />则原信号的滤波值为<br />$\hat Y &#x3D; X\hat A &#x3D; X(X^TX)^{-1}X^TY$</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_36815313/article/details/121238628">SG滤波器原理讲解</a><br><a name="k6PZg"></a></p>
+<h4 id="小波滤波"><a href="#小波滤波" class="headerlink" title="小波滤波"></a>小波滤波</h4><p><a name="aUHow"></a></p>
+<h4 id="原理简介：-1"><a href="#原理简介：-1" class="headerlink" title="原理简介："></a>原理简介：</h4><p>对于信号$x(t)$，利用小波分解可以表示为尺度空间和细节空间两个分量的值<br />$\begin{align}<br>x(t) &amp; &#x3D; \sum_{k}cA_0(k)\phi_{j,k}(t)\<br>     &amp; &#x3D;  \sum_{k}cA_1(k)\phi_{j+1,k}(t) +  \sum_{k}cD_1(k)w_{j+1,k}(t)<br>\end{align}$<br />其中$A_1(k)$和$D_1(k)$分别表示$x(t)$在空间$j+1$的尺度系数和细节系数，为了简便记号，我们可以将第$j$层的系数表示为<br />$A_j &#x3D; A_{j+1}+D{j+1}$<br />则整个信号可以表示为<br /><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652931755695-ca0b8c9e-7f75-4310-83de-b73cb8095fd2.png#clientId=udba27b7a-b767-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=199&id=u2ae5f55a&margin=%5Bobject%20Object%5D&name=image.png&originHeight=199&originWidth=317&originalType=binary&ratio=1&rotation=0&showTitle=false&size=6583&status=done&style=none&taskId=u6b495e46-ebbe-45da-abac-f86e8f0bd2d&title=&width=317" alt="image.png"><br />通常最后1层的尺度系数表示了整个信号的趋势（低频信息），我们可以将该层尺度系数提取出来从而获得信号的基线，或将该层尺度系数置零来去除基线。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_47697584/article/details/121953827">小波变换db4进行四层分解及其信号重构—matlab分析及C语言实现</a><br><a name="j76B3"></a></p>
+<h4 id="EMD"><a href="#EMD" class="headerlink" title="EMD"></a>EMD</h4><blockquote>
+<p>EMD将信号从高频至低频分解为若干阶IMF,整个过程体现了多尺度的滤波过程。借助这一点,我们可以方便地构造一种新型的滤波方式,即根据信号分析的目的,有选择性地把不同的IMF组合起来,以突出信号在某一频率范围内的特征。显然,去掉先分解出来的几阶IMF,把其余的IMF和残余项组合起来,相当于原信号通过了一个低通滤波器。去掉最后分解出来的几阶IMF和残余项,把其余的IMF组合起来,相当于原信号通过了一个高通滤波器。</p>
+</blockquote>
+<p><a name="nxw41"></a></p>
+<h4 id="原理简介：-2"><a href="#原理简介：-2" class="headerlink" title="原理简介："></a>原理简介：</h4><ol>
+<li>找到原始信号$X(t)$的极大值和极小值点，然后通过曲线插值方法对这些极值点进行拟合，得到信号的上包络线$X_{max}(t)$和下包络线$X_{min}(t)$。</li>
+<li>然后求包络平均值</li>
+</ol>
+<p>$m_1(t) &#x3D; \frac{X_{max}(t)+X_{min}(t)}{2}$</p>
+<ol start="3">
+<li>对原始信号$X(t)$与平均包络$m_1(t)$进行相减，得到余下信号$d_1(t)$。一般情况下，对于平稳信号而言，它是原始信号$X(t)$的第一个模态函数(IMF)。但对于非平稳信号，信号的并不是在某一个区域内单调递增的，而是会出现拐点。这些能反映原始信号$X(t)$的具体特征的拐点若未被选中，则得到的第一阶模态函数并不准确，也就是通常得到的$d_1(t)$并不满足IMF的两个条件，所以需要继续进行筛选。</li>
+<li>对余下信号$d_1(t)$重复上述1~3操作的处理，直到SD(筛分门限值，一般取值0.2-0.3)小于门限值时才停止，这样得到最终合适的第一阶模态分量$c_1(t)$，即第一个IMF。其中SD求法如下：</li>
+</ol>
+<p>$SD &#x3D; \sum_{t&#x3D;0}^T\frac{|d_{k-1}(t)-d_k(t)|^2}{d^2_{k-1}(t)}$</p>
+<ol start="5">
+<li>对信号$X(t)$与$c_1(t)$求差，得到第一阶残差量$r_1(t)$，将$r_1(t)$替代原始信号$X(t)$进行步骤1~4的处理，重复 n 次后可获取第 n 阶模态函数$c_n(t)$和最终符合标准的残差量$r_n(t)$。原始信号$X(t)$经EMD分解的表达式为</li>
+</ol>
+<p>$X(t) &#x3D; \sum{c_n(t)+r_n(t)}$</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://blog.csdn.net/zyb228/article/details/103314634">经验模式分解EMD算法原理</a><br><a name="aAv50"></a></p>
+<h4 id="VMD"><a href="#VMD" class="headerlink" title="VMD"></a>VMD</h4><blockquote>
+<p>在信号处理中，变分模态分解是一种信号分解估计方法。 该方法在获取分解分量的过程中通过迭代搜寻变分模型最优解来确定每个分量的频率中心和带宽，从而能够自适应地实现信号的频域剖分及各分量的有效分离。</p>
+</blockquote>
+<p><a name="eZIDy"></a></p>
+<h4 id="原理简介：-3"><a href="#原理简介：-3" class="headerlink" title="原理简介："></a>原理简介：</h4><p>变分模态分解的整体框架是变分问题，使得每个模态的估计带宽之和最小，其中假设每个“模态”是具有不同中心频率的有限带宽，为解决这一变分问题，采用了交替方向乘子法，不断更新各模态及其中心频率，逐步将各模态解调到相应的基频带，最终各个模态即相应的中心频率被一同提取出来。约束变分表达式为<br />$\begin{cases}<br>\underset{&lt;!–swig￼0–&gt;}{min} \left{||\partial_t \left[ \left(\delta(t)+\frac{j}{\pi t} \right)*u_k(t) \right]e^{-jw_kt} ||^2_2\right}\<br>\text{s.t.}  \underset{k}{\sum}u_k &#x3D; f<br>\end{cases}$<br />求解变分约束模型的最优解，可利用二次惩罚函数线$\alpha$和拉格朗日乘子$\lambda$：<br />$\begin{align}<br>L(|u_k|,|w_k|,|\lambda|):&#x3D; &amp; \alpha\underset{k}{\sum}||\partial_t \left[ \left(\delta(t)+\frac{j}{\pi t} \right)*u_k(t) \right]e^{-jw_kt} ||^2_2 \ &amp; + ||f(t)-\underset{k}{\sum}u_k(t)||^2_2 + \left\langle \lambda(t), f(t)-\underset{k}{\sum}u_k(t) \right\rangle<br>\end{align}$<br />利用交替方向乘子算法解决变分问题，交替更新$u_k^{n+1}$,$w_k^{n+1}$,$\lambda_k^{n+1}$来求解拉格朗日表达式的 “鞍点”。<br />$\hat{u}_k^{n+1}(w)&#x3D;\frac{\hat{f}(w)-\underset{i\ne k}{\sum}\hat{u}_i(w)+\hat{\lambda}(w)&#x2F;2}{1+2\alpha(w-w_k)^2}$<br />$w_k^{n+1}&#x3D;\frac{\int_0^{\infin}w|\hat{u}_k(w)|^2dw}{\int_0^{\infin}|\hat{u}_k(w)|^2dw}$</p>
+<p>参考 <a target="_blank" rel="noopener" href="https://sci-hub.ee/10.1109/TSP.2013.2288675">K. Dragomiretskiy and D. Zosso, “Variational Mode Decomposition,” in <em>IEEE Transactions on Signal Processing</em>, vol. 62, no. 3, pp. 531-544, Feb.1, 2014, doi: 10.1109&#x2F;TSP.2013.2288675.</a><br><a name="J3Fue"></a></p>
+<h4 id="分段三次样条插值"><a href="#分段三次样条插值" class="headerlink" title="分段三次样条插值"></a>分段三次样条插值</h4><blockquote>
+<p>每个子区间的多项式函数是三次的，所以名字里有“三次”，整个插值函数曲线由分段三次曲线并接而成，并且在连接点也就是样点上必须要二阶连续可导。</p>
+</blockquote>
+<p><a name="H3nBN"></a></p>
+<h4 id="原理简介：-4"><a href="#原理简介：-4" class="headerlink" title="原理简介："></a>原理简介：</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652866199456-3c4e50f8-d987-44eb-afea-7b749fa6dab0.png#clientId=udba27b7a-b767-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=796&id=Lvard&margin=%5Bobject%20Object%5D&name=image.png&originHeight=796&originWidth=1420&originalType=binary&ratio=1&rotation=0&showTitle=false&size=129416&status=done&style=none&taskId=u7bdc02b0-1cf8-4314-8e61-d151a50f072&title=&width=1420" alt="image.png"><br /><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652866209660-69757840-2964-43ec-8183-18f4d1a7a88f.png#clientId=udba27b7a-b767-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=546&id=WDQXA&margin=%5Bobject%20Object%5D&name=image.png&originHeight=546&originWidth=1261&originalType=binary&ratio=1&rotation=0&showTitle=false&size=49915&status=done&style=none&taskId=u1642a50f-7399-4baa-83b8-62c557bb23a&title=&width=1261" alt="image.png"></p>
+<p><a name="BGHdv"></a></p>
+<h4 id="平滑先验滤波"><a href="#平滑先验滤波" class="headerlink" title="平滑先验滤波"></a>平滑先验滤波</h4><p>平滑先验法原理 (Smoothness Priors Approach, SPA)是芬兰库奥皮奥大学的Karjalainen博士最先提出的一种信号非线性去趋方法, 并有效地应用于人体心电信号。常用的参数辨识算法是最小二乘估计, 而SPA法采用的是一种更为通用的参数估计算法, 称之为正则化最小二乘法 (Regularized Least Squares Solution) </p>
+<p><a name="o6E70"></a></p>
+<h4 id="原理简介：-5"><a href="#原理简介：-5" class="headerlink" title="原理简介："></a>原理简介：</h4><p>对于任意时间序列$z$，可表示为<br />$z&#x3D;(z_1,z_2,…,z_n)^T&#x3D;z_{stat}+z_{trend}$<br />其中$z_{stat}$,$z_{trend}$分别代表近似稳态成分和趋势成分。低频成分可以通过下式进行拟合<br />$z_{trend}&#x3D;H\Theta + \varepsilon$<br />其中$H$为观测矩阵，$\Theta$为回归参数，$\varepsilon$为观测误差。然后通过正则化最小二乘准则来估计这些回归参数<br />$\hat{\Theta}_\lambda&#x3D;\underset{\Theta}{argmin}\left{ ||H\Theta-z||^2+\lambda^2||D_d(H\Theta)||^2\right}$<br />其中$\lambda$为正则化参数，$D_d$为第d次导数操作的离散逼近。加入一些先验知识偶，上述等式可解为<br />$\hat{\Theta}<em>\lambda&#x3D;(H_TH+\lambda^2H_TD^T_dD_dH)^{-1}H^Tz$<br />$\hat{z</em>{trend}}&#x3D;H\hat{\Theta_\lambda}$<br />其中，观测矩阵$H$可以包含时间序列$z$的一些已知信息，例如使用一些高斯函数或三角函数。通常，二阶差分矩阵是一个不错的选择<br />$D_2 &#x3D; \begin{pmatrix}<br> 1 &amp; -2 &amp; 1 &amp; 0 &amp;\cdots &amp; 0 \<br> 0 &amp; 1 &amp; -2 &amp; 1 &amp; \cdots &amp; a_2^n \<br> \vdots  &amp; \vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \<br> 0 &amp; \cdots&amp; \cdots &amp; 1 &amp; -2 &amp; 1<br> \end{pmatrix}$</p>
+<p><a name="YpRYW"></a></p>
+<h4 id="beads-凸优化"><a href="#beads-凸优化" class="headerlink" title="beads 凸优化"></a>beads 凸优化</h4><blockquote>
+<p>该算法的主要作用在于基线修正、降噪、仪器零漂修正功能。有一个使用的限制条件是被处理信号必须是大多数峰值是正的稀疏信号.</p>
+</blockquote>
+<p><a name="oiiCt"></a></p>
+<h4 id="原理简介：-6"><a href="#原理简介：-6" class="headerlink" title="原理简介："></a>原理简介：</h4><p>与上面类似，不过多介绍了，beads 在 Matlab 上有源码，先看效果在分析<br />$\hat{x}&#x3D;\underset{\Theta}{argmin}\left{ F(x)&#x3D;||H(y-x)||^2_2+\sum_{i&#x3D;0}^M\lambda_iR_i(D_ix)\right}$</p>
+<p>参考 <a target="_blank" rel="noopener" href="https://sci-hub.ee/10.1016/j.chemolab.2014.09.014">Chromatogram baseline estimation and denoising using sparsity (BEADS)</a><br><a name="fdYd9"></a></p>
+<h3 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h3><p><a name="iKwNd"></a></p>
+<h4 id="组合1：CAL-20100-MIT-基线"><a href="#组合1：CAL-20100-MIT-基线" class="headerlink" title="组合1：CAL 20100 + MIT 基线"></a>组合1：CAL 20100 + MIT 基线</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652946948199-1611ed08-d2f8-46b6-8bf7-988467ae8397.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=uf1af97d2&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=252936&status=done&style=none&taskId=uaeeedfc1-3e52-4b71-a5e6-b9083fec971&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0038 s】 整系数高通滤波器 0.67 Hz<br />【0.0049 s】 S-G 滤波器<br />【0.0196 s】 小波滤波<br />【0.0202 s】 EMD<br />【4.2227 s】 VMD<br />【0.0373 s】 分段三次样条插值<br />【0.0076 s】 平滑先验<br />【0.4204 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="gEd40"></a></p>
+<h4 id="组合2：CAL-20110-MIT-基线"><a href="#组合2：CAL-20110-MIT-基线" class="headerlink" title="组合2：CAL 20110 + MIT 基线"></a>组合2：CAL 20110 + MIT 基线</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652946842256-8f084518-3e2d-4705-ac38-ac29ed61ab72.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=u9eb79298&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=233185&status=done&style=none&taskId=u5e22c12a-c57e-47fe-adcf-b61815afc26&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0039 s】 整系数高通滤波器 0.67 Hz<br />【0.0048 s】 S-G 滤波器<br />【0.0186 s】 小波滤波<br />【0.0193 s】 EMD<br />【4.3094 s】 VMD<br />【0.0117 s】 分段三次样条插值<br />【0.0075 s】 平滑先验<br />【0.4107 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="U8UnJ"></a></p>
+<h4 id="组合3：CAL-20160-MIT-基线"><a href="#组合3：CAL-20160-MIT-基线" class="headerlink" title="组合3：CAL 20160 + MIT 基线"></a>组合3：CAL 20160 + MIT 基线</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947034457-e001267e-4b85-4727-9fa0-38312e34292a.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=ubaf057a8&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=228135&status=done&style=none&taskId=ud245efdd-4e08-4a52-b289-465ae4f333f&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0039 s】 整系数高通滤波器 0.67 Hz<br />【0.0057 s】 S-G 滤波器<br />【0.0094 s】 小波滤波<br />【0.0165 s】 EMD<br />【4.2686 s】 VMD<br />【0.0089 s】 分段三次样条插值<br />【0.0072 s】 平滑先验<br />【0.4083 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="YlRHI"></a></p>
+<h4 id="组合4：CAL-20100-单正弦基线"><a href="#组合4：CAL-20100-单正弦基线" class="headerlink" title="组合4：CAL 20100 + 单正弦基线"></a>组合4：CAL 20100 + 单正弦基线</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947117960-41d62c13-6b1f-4cc6-a6ff-7230c6ebd236.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=ucf34c0b5&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=249313&status=done&style=none&taskId=u4ecd0e46-d6ce-4fc4-9f07-57bd0d0b918&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0043 s】 整系数高通滤波器 0.67 Hz<br />【0.0056 s】 S-G 滤波器<br />【0.0167 s】 小波滤波<br />【0.0155 s】 EMD<br />【4.2638 s】 VMD<br />【0.0065 s】 分段三次样条插值<br />【0.0071 s】 平滑先验<br />【0.4070 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="WXzUb"></a></p>
+<h4 id="组合5：CAL-20110-单正弦基线"><a href="#组合5：CAL-20110-单正弦基线" class="headerlink" title="组合5：CAL 20110 + 单正弦基线"></a>组合5：CAL 20110 + 单正弦基线</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947144465-a44ab1e1-09e2-45ed-ba66-ea7fdb58c3ab.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=u3be57b1e&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=248176&status=done&style=none&taskId=u32bfa327-b29a-4b63-8d34-f3fa135a3ce&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0043 s】 整系数高通滤波器 0.67 Hz<br />【0.0056 s】 S-G 滤波器<br />【0.0088 s】 小波滤波<br />【0.0179 s】 EMD<br />【4.2580 s】 VMD<br />【0.0070 s】 分段三次样条插值<br />【0.0071 s】 平滑先验<br />【0.4181 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="KQ3qX"></a></p>
+<h4 id="组合6：CAL-20160-单正弦基线"><a href="#组合6：CAL-20160-单正弦基线" class="headerlink" title="组合6：CAL 20160 + 单正弦基线"></a>组合6：CAL 20160 + 单正弦基线</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947176927-c4f16ad4-c196-4b2d-937d-94ecd2a4ac34.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=uc57932c2&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=238923&status=done&style=none&taskId=u859a3a2f-6ada-4fd8-ac49-2f9aceea7fe&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0041 s】 整系数高通滤波器 0.67 Hz<br />【0.0049 s】 S-G 滤波器<br />【0.0076 s】 小波滤波<br />【0.0159 s】 EMD<br />【4.3430 s】 VMD<br />【0.0076 s】 分段三次样条插值<br />【0.0069 s】 平滑先验<br />【0.4068 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="MxwOQ"></a></p>
+<h4 id="组合7：CAL-20100-多正弦基线"><a href="#组合7：CAL-20100-多正弦基线" class="headerlink" title="组合7：CAL 20100 + 多正弦基线"></a>组合7：CAL 20100 + 多正弦基线</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947499977-a02070db-4d66-4ef8-be33-9423850746ed.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=u274d7edc&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=167648&status=done&style=none&taskId=u0531af10-afa5-43f1-bec5-112a39d9c16&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0043 s】 整系数高通滤波器 0.67 Hz<br />【0.0056 s】 S-G 滤波器<br />【0.0079 s】 小波滤波<br />【0.0182 s】 EMD<br />【4.2775 s】 VMD<br />【0.0067 s】 分段三次样条插值<br />【0.0079 s】 平滑先验<br />【0.4143 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="uFjMZ"></a></p>
+<h4 id="组合8：CAL-20110-多正弦基线"><a href="#组合8：CAL-20110-多正弦基线" class="headerlink" title="组合8：CAL 20110 + 多正弦基线"></a>组合8：CAL 20110 + 多正弦基线</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947526722-5771fb2e-5831-4a73-935c-134b4db411b0.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=u7628d2fa&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=171679&status=done&style=none&taskId=u7bfe42d0-f680-44ca-bfd7-fd878267ddf&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0042 s】 整系数高通滤波器 0.67 Hz<br />【0.0055 s】 S-G 滤波器<br />【0.0073 s】 小波滤波<br />【0.0183 s】 EMD<br />【4.3131 s】 VMD<br />【0.0070 s】 分段三次样条插值<br />【0.0081 s】 平滑先验<br />【0.4117 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="Z8lHl"></a></p>
+<h4 id="组合9：CAL-20160-多正弦基线"><a href="#组合9：CAL-20160-多正弦基线" class="headerlink" title="组合9：CAL 20160 + 多正弦基线"></a>组合9：CAL 20160 + 多正弦基线</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947555615-b3da85b0-3598-4df4-b583-52790d0692ed.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=uee561c44&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=164703&status=done&style=none&taskId=ua2b54a09-57ce-45c6-b09f-bfd406fe4f1&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0039 s】 整系数高通滤波器 0.67 Hz<br />【0.0061 s】 S-G 滤波器<br />【0.0077 s】 小波滤波<br />【0.0207 s】 EMD<br />【4.2227 s】 VMD<br />【0.0068 s】 分段三次样条插值<br />【0.0072 s】 平滑先验<br />【0.4216 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="Stbpe"></a></p>
+<h4 id="组合10：门信号"><a href="#组合10：门信号" class="headerlink" title="组合10：门信号"></a>组合10：门信号</h4><p><img src="https://cdn.nlark.com/yuque/0/2022/png/21845166/1652947594976-50fef0a7-bcd9-470c-85f6-7eac1e3d67ec.png#clientId=u2717f878-29f7-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=962&id=u7377a548&margin=%5Bobject%20Object%5D&name=image.png&originHeight=962&originWidth=1920&originalType=binary&ratio=1&rotation=0&showTitle=false&size=145261&status=done&style=none&taskId=u9530ed81-57a1-42f5-8472-b1b1da634fc&title=&width=1920" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>各算法用时<br />【0.0073 s】 整系数高通滤波器 0.67 Hz<br />【0.0056 s】 S-G 滤波器<br />【0.0071 s】 小波滤波<br />【0.0108 s】 EMD<br />【3.9332 s】 VMD<br />【0.0065 s】 分段三次样条插值<br />【0.0071 s】 平滑先验<br />【0.4002 s】 beads</th>
+</tr>
+</thead>
+</table>
+<p><a name="mYsV7"></a></p>
+<h3 id="实验分析"><a href="#实验分析" class="headerlink" title="实验分析"></a>实验分析</h3><p>综合各组实验结果，总结下表</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>滤波效果</th>
+<th>算法用时 (20 s信号)</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0.67 Hz整系数高通滤波</td>
+<td>基准</td>
+<td>~0.004 s</td>
+<td>快，易实现</td>
+<td>可能会影响ST段，或基线滤不干净</td>
+</tr>
+<tr>
+<td>S-G 滤波</td>
+<td>能去除基线但会使波形失真</td>
+<td>~0.005 s</td>
+<td>快，基线去除效果好</td>
+<td>波形失真， 矩形信号严重失真</td>
+</tr>
+<tr>
+<td>小波滤波</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>EMD 滤波</td>
+<td>接近但略差于基准</td>
+<td>~0.01 s</td>
+<td>快，波形不失真</td>
+<td>基线滤不干净</td>
+</tr>
+<tr>
+<td>VMD 滤波</td>
+<td>基线去除效果好但会使波形失真</td>
+<td>~ 4 s</td>
+<td>基线去除效果好</td>
+<td>慢，波形失真</td>
+</tr>
+<tr>
+<td>分段三次样条插值滤波</td>
+<td>效果取决于噪声和拟合效果</td>
+<td>~ 0.007 s</td>
+<td>快</td>
+<td>滤波效果不确定，且偶尔会使头尾信号突变</td>
+</tr>
+<tr>
+<td>平滑先验滤波</td>
+<td>基线去除效果好但会使波形失真</td>
+<td>~ 0.007 s</td>
+<td>快，基线去除效果好</td>
+<td>波形严重失真</td>
+</tr>
+<tr>
+<td>beads 滤波</td>
+<td>基线去除效果好，波形基本不失真</td>
+<td>~ 0.4 s</td>
+<td>基线去除效果好，波形基本不失真</td>
+<td>稍慢，只能适用于各个波段均在基线之上的情况。当波段低于基线时，使用 beads 滤波会使波形失真。</td>
+</tr>
+</tbody></table>
+<p><a name="teKOp"></a></p>
+<h3 id="实验难点"><a href="#实验难点" class="headerlink" title="实验难点"></a>实验难点</h3><p>部分滤波方法原理实现起来不方便，而且对部分参数理解不深刻，无法达到论文中的最优解<br><a name="wt2YY"></a></p>
+<h2 id="实验结论"><a href="#实验结论" class="headerlink" title="实验结论"></a>实验结论</h2><p>每个滤波器都有各自的优缺点，暂时还无法找到一个滤波器能够满足既可以避免ST失真又能修正基线漂移，但是给后续实验提供了一些思路。为了解决ST失真和基线漂移的问题，在基于本次实验的滤波器基础上，可以进行尝试的方向有：</p>
+<ol>
+<li>0.67 Hz整系数高通滤波 + 拟合 来去除未滤干净的基线</li>
+<li>自适应的 EMD 滤波</li>
+<li>优化 beads 滤波器</li>
+</ol>
+</div><div class="article-licensing box"><div class="licensing-title"><p>基线修正</p><p><a href="http://henglyu.github.io/2022/05/24/基线修正/">http://henglyu.github.io/2022/05/24/基线修正/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Heng Lyu</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2022-05-24</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2022-05-24</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a><a class="icons" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="icon fab fa-creative-commons-by"></i></a><a class="icons" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="icon fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><hr style="height:1px;margin:1rem 0"><div class="level is-mobile is-flex"><div class="article-tags is-size-7 is-uppercase"><i class="fas fa-tags has-text-grey"></i> <a class="link-muted" rel="tag" href="/tags/%E6%BB%A4%E6%B3%A2/">滤波 </a></div></div><div class="notification is-danger">You need to set <code>install_url</code> to use ShareThis. Please set it in <code>_config.yml</code>.</div></article></div><div class="card"><div class="card-content"><h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3><div class="buttons is-centered"><a class="button donate" data-type="alipay"><span class="icon is-small"><i class="fab fa-alipay"></i></span><span>支付宝</span><span class="qrcode"><img src="/" alt="支付宝"></span></a><a class="button donate" data-type="wechat"><span class="icon is-small"><i class="fab fa-weixin"></i></span><span>微信</span><span class="qrcode"><img src="/" alt="微信"></span></a></div></div></div><nav class="post-navigation mt-4 level is-mobile"><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2022/05/13/C%E8%AF%AD%E8%A8%80%E9%A1%B9%E7%9B%AE%E7%BC%96%E7%A0%81%E8%A7%84%E8%8C%83-%E4%B8%AA%E4%BA%BA%E7%94%A8/"><span class="level-item">C语言项目编码规范(个人用)</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div class="content" id="valine-thread"></div><script src="//cdn.jsdelivr.net/npm/leancloud-storage@3/dist/av-min.js"></script><script src="https://cdn.jsdelivr.net/npm/valine@1.4.16/dist/Valine.min.js"></script><script>new Valine({
+            el: '#valine-thread',
+            appId: "UvbopL3TXqSC0itvsMLtCBdA-gzGzoHsz",
+            appKey: "gVomB3sn1bvDvjrWNeQjh5B7",
+            
+            avatar: "mm",
+            avatarForce: false,
+            meta: ["nick","mail","link"],
+            pageSize: 10,
+            lang: "zh-CN",
+            visitor: false,
+            highlight: true,
+            recordIP: false,
+            
+            
+            
+            enableQQ: false,
+            requiredFields: [],
+        });</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1"><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar" src="/img/logo_lyu2.jpg" alt="Heng Lyu"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">Heng Lyu</p><p class="is-size-6 is-block">527870681@qq.com</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>武汉-湖北</span></p></div></div></nav><nav class="level is-mobile"><a class="level-item has-text-centered is-marginless" href="/categories"><div><p class="heading">文章</p><div><p class="title">5</p></div></div></a><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/categories"><p class="title">1</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/tags"><p class="title">4</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/henglyu" target="_blank" rel="noopener">关注我</a></div><div class="level is-mobile is-multiline"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/henglyu"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Facebook" href="/"><i class="fab fa-facebook"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Twitter" href="/"><i class="fab fa-twitter"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="RSS" href="/"><i class="fas fa-rss"></i></a></div></div></div><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#实验目的"><span class="level-left"><span class="level-item">1</span><span class="level-item">实验目的</span></span></a></li><li><a class="level is-mobile" href="#实验设备与软件"><span class="level-left"><span class="level-item">2</span><span class="level-item">实验设备与软件</span></span></a></li><li><a class="level is-mobile" href="#数据来源-x2F-划分"><span class="level-left"><span class="level-item">3</span><span class="level-item">数据来源/划分</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#数据来源"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">数据来源</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#法规校准用-CAL-数据"><span class="level-left"><span class="level-item">3.1.1</span><span class="level-item">法规校准用 CAL 数据</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#CAL20100"><span class="level-left"><span class="level-item">3.1.1.1</span><span class="level-item">CAL20100</span></span></a></li><li><a class="level is-mobile" href="#CAL20110"><span class="level-left"><span class="level-item">3.1.1.2</span><span class="level-item">CAL20110</span></span></a></li><li><a class="level is-mobile" href="#CAL20160"><span class="level-left"><span class="level-item">3.1.1.3</span><span class="level-item">CAL20160</span></span></a></li></ul></li><li><a class="level is-mobile" href="#MIT-基线漂移数据"><span class="level-left"><span class="level-item">3.1.2</span><span class="level-item">MIT 基线漂移数据</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#bw-dat"><span class="level-left"><span class="level-item">3.1.2.1</span><span class="level-item">bw.dat</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Matlab-模拟数据"><span class="level-left"><span class="level-item">3.1.3</span><span class="level-item">Matlab 模拟数据</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#单正弦信号"><span class="level-left"><span class="level-item">3.1.3.1</span><span class="level-item">单正弦信号</span></span></a></li><li><a class="level is-mobile" href="#多正弦信号"><span class="level-left"><span class="level-item">3.1.3.2</span><span class="level-item">多正弦信号</span></span></a></li><li><a class="level is-mobile" href="#周期性门信号（宽度-100-ms-x2F-幅度-3-mV）"><span class="level-left"><span class="level-item">3.1.3.3</span><span class="level-item">周期性门信号（宽度 100 ms / 幅度 3 mV）</span></span></a></li></ul></li></ul></li><li><a class="level is-mobile" href="#数据划分"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">数据划分</span></span></a></li></ul></li><li><a class="level is-mobile" href="#实验方法、分析和难点"><span class="level-left"><span class="level-item">4</span><span class="level-item">实验方法、分析和难点</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#实验方法"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">实验方法</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#S-G-滤波器"><span class="level-left"><span class="level-item">4.1.1</span><span class="level-item">S-G 滤波器</span></span></a></li><li><a class="level is-mobile" href="#原理简介："><span class="level-left"><span class="level-item">4.1.2</span><span class="level-item">原理简介：</span></span></a></li><li><a class="level is-mobile" href="#小波滤波"><span class="level-left"><span class="level-item">4.1.3</span><span class="level-item">小波滤波</span></span></a></li><li><a class="level is-mobile" href="#原理简介：-1"><span class="level-left"><span class="level-item">4.1.4</span><span class="level-item">原理简介：</span></span></a></li><li><a class="level is-mobile" href="#EMD"><span class="level-left"><span class="level-item">4.1.5</span><span class="level-item">EMD</span></span></a></li><li><a class="level is-mobile" href="#原理简介：-2"><span class="level-left"><span class="level-item">4.1.6</span><span class="level-item">原理简介：</span></span></a></li><li><a class="level is-mobile" href="#VMD"><span class="level-left"><span class="level-item">4.1.7</span><span class="level-item">VMD</span></span></a></li><li><a class="level is-mobile" href="#原理简介：-3"><span class="level-left"><span class="level-item">4.1.8</span><span class="level-item">原理简介：</span></span></a></li><li><a class="level is-mobile" href="#分段三次样条插值"><span class="level-left"><span class="level-item">4.1.9</span><span class="level-item">分段三次样条插值</span></span></a></li><li><a class="level is-mobile" href="#原理简介：-4"><span class="level-left"><span class="level-item">4.1.10</span><span class="level-item">原理简介：</span></span></a></li><li><a class="level is-mobile" href="#平滑先验滤波"><span class="level-left"><span class="level-item">4.1.11</span><span class="level-item">平滑先验滤波</span></span></a></li><li><a class="level is-mobile" href="#原理简介：-5"><span class="level-left"><span class="level-item">4.1.12</span><span class="level-item">原理简介：</span></span></a></li><li><a class="level is-mobile" href="#beads-凸优化"><span class="level-left"><span class="level-item">4.1.13</span><span class="level-item">beads 凸优化</span></span></a></li><li><a class="level is-mobile" href="#原理简介：-6"><span class="level-left"><span class="level-item">4.1.14</span><span class="level-item">原理简介：</span></span></a></li></ul></li><li><a class="level is-mobile" href="#实验结果"><span class="level-left"><span class="level-item">4.2</span><span class="level-item">实验结果</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#组合1：CAL-20100-MIT-基线"><span class="level-left"><span class="level-item">4.2.1</span><span class="level-item">组合1：CAL 20100 + MIT 基线</span></span></a></li><li><a class="level is-mobile" href="#组合2：CAL-20110-MIT-基线"><span class="level-left"><span class="level-item">4.2.2</span><span class="level-item">组合2：CAL 20110 + MIT 基线</span></span></a></li><li><a class="level is-mobile" href="#组合3：CAL-20160-MIT-基线"><span class="level-left"><span class="level-item">4.2.3</span><span class="level-item">组合3：CAL 20160 + MIT 基线</span></span></a></li><li><a class="level is-mobile" href="#组合4：CAL-20100-单正弦基线"><span class="level-left"><span class="level-item">4.2.4</span><span class="level-item">组合4：CAL 20100 + 单正弦基线</span></span></a></li><li><a class="level is-mobile" href="#组合5：CAL-20110-单正弦基线"><span class="level-left"><span class="level-item">4.2.5</span><span class="level-item">组合5：CAL 20110 + 单正弦基线</span></span></a></li><li><a class="level is-mobile" href="#组合6：CAL-20160-单正弦基线"><span class="level-left"><span class="level-item">4.2.6</span><span class="level-item">组合6：CAL 20160 + 单正弦基线</span></span></a></li><li><a class="level is-mobile" href="#组合7：CAL-20100-多正弦基线"><span class="level-left"><span class="level-item">4.2.7</span><span class="level-item">组合7：CAL 20100 + 多正弦基线</span></span></a></li><li><a class="level is-mobile" href="#组合8：CAL-20110-多正弦基线"><span class="level-left"><span class="level-item">4.2.8</span><span class="level-item">组合8：CAL 20110 + 多正弦基线</span></span></a></li><li><a class="level is-mobile" href="#组合9：CAL-20160-多正弦基线"><span class="level-left"><span class="level-item">4.2.9</span><span class="level-item">组合9：CAL 20160 + 多正弦基线</span></span></a></li><li><a class="level is-mobile" href="#组合10：门信号"><span class="level-left"><span class="level-item">4.2.10</span><span class="level-item">组合10：门信号</span></span></a></li></ul></li><li><a class="level is-mobile" href="#实验分析"><span class="level-left"><span class="level-item">4.3</span><span class="level-item">实验分析</span></span></a></li><li><a class="level is-mobile" href="#实验难点"><span class="level-left"><span class="level-item">4.4</span><span class="level-item">实验难点</span></span></a></li></ul></li><li><a class="level is-mobile" href="#实验结论"><span class="level-left"><span class="level-item">5</span><span class="level-item">实验结论</span></span></a></li></ul></div></div><style>#toc .menu-list > li > a.is-active + .menu-list { display: block; }#toc .menu-list > li > a + .menu-list { display: none; }</style><script src="/js/toc.js" defer></script></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo_lyu1.png" alt="Henglyu的个人博客" height="28"></a><p class="is-size-7"><span>&copy; 2022 Heng Lyu</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a><br><span id="busuanzi_container_site_uv">共<span id="busuanzi_value_site_uv">0</span>个访客</span></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/cookieconsent@3.1.1/build/cookieconsent.min.js" defer></script><script>window.addEventListener("load", () => {
+      window.cookieconsent.initialise({
+        type: "info",
+        theme: "edgeless",
+        static: false,
+        position: "bottom-left",
+        content: {
+          message: "此网站使用Cookie来改善您的体验。",
+          dismiss: "知道了！",
+          allow: "允许使用Cookie",
+          deny: "拒绝",
+          link: "了解更多",
+          policy: "Cookie政策",
+          href: "https://www.cookiesandyou.com/",
+        },
+        palette: {
+          popup: {
+            background: "#edeff5",
+            text: "#838391"
+          },
+          button: {
+            background: "#4b81e8"
+          },
+        },
+      });
+    });</script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>
